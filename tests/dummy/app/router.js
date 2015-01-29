@@ -37,5 +37,5 @@ export default route(null, 'Ember Enhanced Router').routes(
   ),
 
   // the catchall route
-  route('catchall@*')
+  route('catchall@*', 'Nothing Here!')
 ).toRouter({location: config.locationType});
