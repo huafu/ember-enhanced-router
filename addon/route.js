@@ -1,10 +1,8 @@
 import Ember from 'ember';
-
 import './ember-overrides';
 
-function prefix(key) {
-  return '$$EER$$' + key;
-}
+var computed = Ember.computed;
+var readOnly = computed.readOnly;
 
 function cleanPath(path) {
   return path.replace(/(?:^\/|\/$)/g, '');
@@ -52,132 +50,173 @@ function route(name, titleToken, options) {
   else {
     path = '/';
   }
-  return new RouteMeta(name, path, titleToken, options);
+  return RouteMeta.create({
+    name:             name || 'application',
+    path:             path,
+    routerTitleToken: titleToken,
+    options:          options || {}
+  });
 }
 
 /**
  * @class RouteMeta
- * @param {string} name
- * @param {string} path
- * @param {string} titleToken
- * @param {{resetTitle: boolean}} options
- * @constructor
  */
-function RouteMeta(name, path, titleToken, options) {
-  this.name = name || 'application';
-  this.parent = null;
-  this.route = null;
-  this.controller = null;
-  this.path = path;
-  this.cleanPath = cleanPath(path);
-  this.isIndex = this.cleanPath === '';
-  this.titleToken = titleToken;
-  this.options = options || {};
-  this.children = Ember.A([]);
-  this.childrenByName = Object.create(null);
-  this.childrenByPath = Object.create(null);
-  this.isResource = !name;
-  this.isActive = false;
-}
+var RouteMeta = Ember.Object.extend({
+  /**
+   * Name of this route
+   * @property name
+   * @type {string}
+   */
+  name: null,
 
-/**
- * Register the route corresponding to this meta, as well as the controller
- *
- * @method registerRoute
- * @param route
- */
-RouteMeta.prototype.registerRoute = function (route) {
-  this.route = route;
-  this.controller = route.controllerFor(route.controllerName || route.routeName);
-};
+  /**
+   * Parent meta
+   * @property parent
+   * @type {RouteMeta}
+   */
+  parent: null,
 
-/**
- * Computed the title of the document for this route
- *
- * @method _title
- * @returns {string}
- * @private
- */
-RouteMeta.prototype._title = function () {
-  var tokens = [], current = this, formatter, grabTokens = true, token;
-  while (current && (!formatter || grabTokens)) {
-    if (grabTokens) {
-      token = current.computeTitleToken();
-      if (token) {
-        if (!Ember.isArray(tokens)) {
-          token = [token];
+  /**
+   * Route object
+   * @property route
+   * @type {Ember.Route}
+   */
+  route: null,
+
+  /**
+   * Controller for this route
+   * @property controller
+   * @type {Ember.Controller}
+   */
+  controller: computed('route', function () {
+    var route = this.get('route');
+    if (route) {
+      return route.controllerFor(route.controllerName || route.routeName);
+    }
+  }).readOnly(),
+
+  /**
+   * Path of the route
+   * @property path
+   * @type {string}
+   */
+  path: null,
+
+  /**
+   * Clean path of the route
+   * @property cleanPath
+   * @type {string}
+   */
+  cleanPath: computed('path', function () {
+    return cleanPath(this.get('path'));
+  }),
+
+  /**
+   * Is this route an index (path is '/')?
+   * @property isIndex
+   * @type {boolean}
+   */
+  isIndex: computed('cleanPath', function () {
+    return this.get('cleanPath') === '';
+  }),
+
+  /**
+   * The titleToken as defined in the router
+   * @property routerTitleToken
+   * @type {string|Function}
+   */
+  routerTitleToken: null,
+
+  /**
+   * Options for the route
+   * @property options
+   * @type {{resetTitle: boolean}}
+   */
+  options: null,
+
+  /**
+   * The children of this meta
+   * @property children
+   * @type {Ember.Array}
+   */
+  children: computed(function () {
+    return Ember.A([]);
+  }).readOnly(),
+
+  /**
+   * Are we a resource?
+   * @property isResource
+   * @type {boolean}
+   */
+  isResource: computed(function (key, value) {
+    return arguments.length > 1 ? value : !this.get('parent');
+  }),
+
+  /**
+   * Are we a route and not a resource?
+   * @property isRoute
+   * @type {boolean}
+   */
+  isRoute: computed.not('isResource'),
+
+
+  /**
+   * Computed title token
+   * @property titleToken
+   * @type {string}
+   */
+  titleToken: readOnly('_titleBuilder._realTitleToken'),
+
+
+  /**
+   * Full title
+   * @property fullTitle
+   * @type {string}
+   */
+  fullTitle: computed('titleToken', 'parent.fullTitle', 'options.resetTitle', function () {
+    var tokens = [], current = this, formatter, grabTokens = true, token;
+    while (current && (!formatter || grabTokens)) {
+      if (grabTokens) {
+        token = current.get('titleToken');
+        if (token) {
+          if (!Ember.isArray(token)) {
+            token = [token];
+          }
+          tokens.unshift.apply(tokens, token);
         }
-        tokens.unshift.apply(tokens, token);
+        if (current.get('options.resetTitle')) {
+          grabTokens = false;
+        }
       }
-      if (current.options.resetTitle) {
-        grabTokens = false;
+      if (!formatter) {
+        formatter = current.get('controller.documentTitleFormatter');
       }
+      current = current.get('parent');
     }
-    if (!formatter && current.controller.documentTitleFormatter) {
-      formatter = current.controller.documentTitleFormatter;
-    }
-    current = current.parent;
-  }
-  tokens = Ember.A(tokens).filter(Boolean);
-  return (formatter || defaultFormatter)(tokens);
-};
+    tokens = Ember.A(tokens).filter(Boolean);
+    return (formatter || defaultFormatter)(tokens);
+  }).readOnly(),
 
-/**
- * Get the computed title token, setting it up if not yet done
- *
- * @method computeTitleToken
- * @returns {string}
- */
-RouteMeta.prototype.computeTitleToken = function () {
-  if (this.titleToken === false) {
-    return null;
-  }
-  this.setupTitleToken();
-  // just get the computed property value.
-  return this._ttp.get('_realTitleToken');
-};
+  /**
+   * Humanized name of the route
+   * @property humanizedName
+   * @type {string}
+   */
+  humanizedName: computed('name', function () {
+    return humanize(this.get('name'));
+  }).readOnly(),
 
-/**
- * Adds an ember observer to be triggered when the title changes
- *
- * @method addTitleObserver
- * @param {Object} [target]
- * @param {string|Function} method
- * @param {*} [args...]
- */
-RouteMeta.prototype.addTitleObserver = function () {
-  var args = Array.prototype.slice.call(arguments);
-  args.unshift('_fullTitle');
-  this.setupTitleToken();
-  return this._ttp.addObserver.apply(this._ttp, args);
-};
 
-/**
- * Removes an ember observer which was triggered when the title change
- *
- * @method removeTitleObserver
- * @param {Object} [target]
- * @param {string|Function} method
- * @param {*} [args...]
- */
-RouteMeta.prototype.removeTitleObserver = function () {
-  var args = Array.prototype.slice.call(arguments);
-  args.unshift('_fullTitle');
-  this.setupTitleToken();
-  return this._ttp.removeObserver.apply(this._ttp, args);
-};
-
-/**
- * Setup the title token
- *
- * @method setupTitleToken
- */
-RouteMeta.prototype.setupTitleToken = function () {
-  var tokenCP, defaultToken, props, originalTitleToken, computed = Ember.computed, meta = this;
-  if (!this._ttp) {
+  /**
+   * Our title builder
+   * @property _titleBuilder
+   * @type {Ember.ObjectProxy}
+   */
+  _titleBuilder: computed('isIndexRoute', 'humanizedName', 'routerTitleToken', function () {
+    var tokenCP, defaultToken, props, originalTitleToken;
     // build the title computed property
-    defaultToken = this.isIndexRoute() ? null : humanize(this.name);
-    originalTitleToken = this.titleToken;
+    defaultToken = this.get('isIndexRoute') ? null : this.get('humanizedName');
+    originalTitleToken = this.get('routerTitleToken');
     if (originalTitleToken == null) {
       // default using the humanized version of the route name
       tokenCP = computed(function () {
@@ -196,276 +235,227 @@ RouteMeta.prototype.setupTitleToken = function () {
       // compile the title token
       props = [];
       // not care about result, just the callback
-      originalTitleToken.replace(/\{\{([^}]+)}}/, function (dummy, path) {
+      originalTitleToken.replace(/\{\{(.+)}}/g, function (dummy, path) {
         props.push(path);
       });
-      tokenCP = props.concat([function () {
+      tokenCP = computed.apply(Ember, props.concat([function () {
         var _this = this;
-        return originalTitleToken.replace(/\{\{([^}]+)}}/, function (dummy, path) {
+        return originalTitleToken.replace(/\{\{(.+)}}/g, function (dummy, path) {
           return _this.get(path);
         });
-      }]);
+      }]));
     }
     // create our class and the computed properties for it, then create our object
-
-    this._ttp = Ember.ObjectProxy.extend({
+    return Ember.ObjectProxy.extend({
       _defaultTitleToken: tokenCP,
       _realTitleToken:    computed('_defaultTitleToken', 'content.documentTitleToken', function () {
         var token = this.get('content.documentTitleToken');
         return token === false ? null : (token || this.get('_defaultTitleToken'));
-      }),
-      _fullTitle:         computed('_parentTitleTokenObject._fullTitle', '_realTitleToken', function () {
-        return meta._ttp ? meta._title() : null;
       })
     }).create({
-      content:                 this.controller,
-      _parentTitleTokenObject: this.parent ? this.parent.setupTitleToken() : null
+      content: this.controller
     });
-  }
-  return this._ttp;
-};
+  }).readOnly(),
 
-/**
- * Gets the ful title for this route
- *
- * @method title
- * @returns {string}
- */
-RouteMeta.prototype.title = function () {
-  return this.setupTitleToken().get('_fullTitle');
-};
+  /**
+   * Is our route the index route of parent resource?
+   * @property isIndexRoute
+   * @type {boolean}
+   */
+  isIndexRoute: computed.and('isRoute', 'isIndex'),
+
+  /**
+   * Are we the catch-all route?
+   * @property isCatchAll
+   * @type {boolean}
+   */
+  isCatchAll: computed.equal('cleanPath', '*wildcard'),
+
+  /**
+   * The index child of this resource if any
+   * @property indexChild
+   * @type {RouteMeta}
+   */
+  indexChild: computed('children.@each.isIndex', function () {
+    return this.get('children').findBy('isIndex');
+  }).readOnly(),
+
+  /**
+   * Kind of meta (resource or route)
+   * @property kind
+   * @type {string}
+   */
+  kind: computed('isResource', function () {
+    return this.get('isResource') ? 'resource' : 'route';
+  }).readOnly(),
 
 
-/**
- * Finds whether this the index route of parent resource
- *
- * @method isIndexRoute
- * @returns {boolean}
- */
-RouteMeta.prototype.isIndexRoute = function () {
-  return !this.isResource && this.isIndex;
-};
-
-/**
- * Finds whether this is a wildcard route
- *
- * @method isWildcard
- * @returns {boolean}
- */
-RouteMeta.prototype.isWildcard = function () {
-  return this.cleanPath === '*wildcard';
-};
-
-/**
- * Returns the child which is the index of this route
- *
- * @method childIndexRoute
- * @returns {RouteMeta}
- */
-RouteMeta.prototype.childIndexRoute = function () {
-  return this.childForPath('/');
-};
-
-/**
- * The method doing the call as Router.map is expecting
- *
- * @method map
- * @param {Ember.Router.recognizer} target
- */
-RouteMeta.prototype.map = function (target) {
-  if (this.isResource && !this.childIndexRoute()) {
-    // add index route if it does not exist
-    this._route('index');
-  }
-  this.children.forEach(function (meta) {
-    var args = [meta.name, {path: meta.path}], kind = meta.isResource ? 'resource' : 'route';
-    if (meta.isResource) {
-      args.push(meta.mapFunction());
+  /**
+   * The method doing the call as Router.map is expecting
+   *
+   * @method map
+   * @param {Ember.Router.recognizer} target
+   */
+  map: function (target) {
+    if (this.get('isResource') && !this.get('indexChild')) {
+      // add index route if it does not exist
+      this._route('index');
     }
-    console[meta.isResource && console.group ? 'group' : 'log'](
-      '[enhanced-router] defining ' + kind + ' `' + meta.name + '` + with path `' + meta.path + '`'
-    );
-    target[kind].apply(target, args);
-    if (meta.isResource && console.group) {
-      console.groupEnd();
-    }
-  });
-};
+    this.get('children').forEach(function (meta) {
+      var args, kind, isResource;
+      args = [meta.get('name'), {path: meta.get('path')}];
+      kind = meta.get('kind');
+      isResource = meta.get('isResource');
+      if (isResource) {
+        args.push(meta.get('mapFunction'));
+      }
+      console[meta.isResource && console.group ? 'group' : 'log'](
+        '[enhanced-router] defining ' + kind + ' `' + args[0] + '` + with path `' + args[1] + '`'
+      );
+      target[kind].apply(target, args);
+      if (isResource && console.group) {
+        console.groupEnd();
+      }
+    });
+  },
 
-/**
- * Get the function used to map with ember router
- *
- * @method mapFunction
- * @returns {Function}
- */
-RouteMeta.prototype.mapFunction = function () {
-  var _this = this;
-  return function () {
-    _this.map(this);
-  };
-};
+  /**
+   * Get the function used to map with ember router
+   * @property mapFunction
+   * @type {Function}
+   */
+  mapFunction: computed(function () {
+    var _this = this;
+    return function () {
+      _this.map(this);
+    };
+  }).readOnly(),
 
-/**
- * Get the full name of this route
- *
- * @method fullName
- * @returns {string}
- */
-RouteMeta.prototype.fullName = function () {
-  var segments, current;
-  if (!this._fullName) {
-    segments = [];
-    current = this;
-    if (!current.parent) {
-      return current.name;
-    }
-    while (current.parent) {
-      segments.unshift(current.name);
-      current = current.parent;
-    }
-    this._fullName = segments.join('.');
-  }
-  return this._fullName;
-};
-
-/**
- * Get the full path of this route
- *
- * @method fullPath
- * @returns {string}
- */
-RouteMeta.prototype.fullPath = function () {
-  var segments, current;
-  if (!this._fullPath) {
-    segments = [];
-    current = this;
-    while (current.parent) {
-      segments.unshift(current.cleanPath);
-      current = current.parent;
-    }
-    this._fullPath = Ember.A(segments).filter(Boolean).join('/');
-  }
-  return this._fullPath;
-};
-
-/**
- * Get the root route
- *
- * @method root
- * @returns {RouteMeta}
- */
-RouteMeta.prototype.root = function () {
-  if (!this._root) {
-    if (this.parent) {
-      this._root = this.parent.root();
+  /**
+   * Full name of this route
+   * @property fullName
+   * @type {string}
+   */
+  fullName: computed('name', 'parent.fullName', function () {
+    var parent = this.get('parent.fullName');
+    if (parent && parent !== 'application') {
+      return [parent, this.get('name')].join('.');
     }
     else {
-      this._root = this;
+      return this.get('name');
     }
+  }).readOnly(),
+
+  /**
+   * Full path of the route
+   * @property fullPath
+   * @type {string}
+   */
+  fullPath: computed('path', 'parent.fullPath', function () {
+    return '/' + Ember.A([this.get('parent.fullPath'), this.get('path')]).filter(Boolean).join('/');
+  }).readOnly(),
+
+  /**
+   * The root route
+   * @property root
+   * @type {RouteMeta}
+   */
+  root: computed('parent.root', function () {
+    return this.get('parent.root') || this;
+  }).readOnly(),
+
+  /**
+   * Returns the direct child for given path
+   *
+   * @method childForPath
+   * @param {string} path
+   * @returns {RouteMeta}
+   */
+  childForPath: function (path) {
+    return this.get('children').findBy('cleanPath', cleanPath(path));
+  },
+
+  /**
+   * Returns the direct child for given name
+   *
+   * @method childForName
+   * @param {string} name
+   * @returns {RouteMeta}
+   */
+  childForName: function (name) {
+    return this.get('children').findBy('name', name);
+  },
+
+  /**
+   * Define a child-route to this route
+   *
+   * @method route
+   * @param {string|RouteMeta} name
+   * @param {string} [titleToken]
+   * @param {{resetTitle: boolean}} [options]
+   * @chainable
+   */
+  _route: function (name, titleToken, options) {
+    var child;
+    if (!this.get('isResource')) {
+      this.set('isResource', true);
+    }
+    child = route(name, titleToken, options, this);
+    child.set('parent', this);
+    this.get('children').pushObject(child);
+    return this;
+  },
+
+  /**
+   * Define many child-routes to this route
+   *
+   * @method routes
+   * @params {RouteMeta} [meta...]
+   * @chainable
+   */
+  routes: function () {
+    var routes = Array.prototype.slice.call(arguments);
+    if (routes.length) {
+      Ember.A(routes).forEach(function (child) {
+        this._route(child);
+      }, this);
+    }
+    else {
+      if (!this.get('isResource')) {
+        this.set('isResource', true);
+      }
+    }
+    return this;
+  },
+
+  /**
+   * Returns the string representation of this meta
+   *
+   * @returns {string}
+   */
+  toString: function () {
+    return this.get('fullName') + '[' + this.get('fullPath') + ']';
+  },
+
+  /**
+   * Transforms this RouteMeta into an Ember router
+   *
+   * @method toRouter
+   * @param {Object} options
+   * @return {Ember.Router}
+   */
+  toRouter: function (options) {
+    var Router;
+    options = options || {};
+    if (this.get('parent')) {
+      throw new Error('Only the root route may be exported as an Ember router.');
+    }
+    options._enhancedRouterRootMeta = this;
+    Router = Ember.Router.extend(options);
+    Router.map(this.get('mapFunction'));
+    return Router;
   }
-  return this._root;
-};
-
-/**
- * Defines this route as a resource
- *
- * @method asResource
- * @chainable
- */
-RouteMeta.prototype.asResource = function () {
-  this.isResource = true;
-  return this;
-};
-
-/**
- * Returns the direct child for given path
- *
- * @method childForPath
- * @param {string} path
- * @returns {RouteMeta}
- */
-RouteMeta.prototype.childForPath = function (path) {
-  return this.childrenByPath[prefix(cleanPath(path))];
-};
-
-/**
- * Returns the direct child for given name
- *
- * @method childForName
- * @param {string} name
- * @returns {RouteMeta}
- */
-RouteMeta.prototype.childForName = function (name) {
-  return this.childrenByName[prefix(name)];
-};
-
-
-/**
- * Define a child-route to this route
- *
- * @method route
- * @param {string|RouteMeta} name
- * @param {string} [titleToken]
- * @param {{resetTitle: boolean}} [options]
- * @chainable
- */
-RouteMeta.prototype._route = function (name, titleToken, options) {
-  var child = route(name, titleToken, options);
-  child.parent = this;
-  this.asResource();
-  this.children.push(child);
-  this.childrenByName[prefix(child.name)] = child;
-  this.childrenByPath[prefix(child.cleanPath)] = child;
-  return this;
-};
-
-/**
- * Define many child-routes to this route
- *
- * @method routes
- * @params {RouteMeta} [meta...]
- * @chainable
- */
-RouteMeta.prototype.routes = function () {
-  var routes = Array.prototype.slice.call(arguments);
-  if (routes.length) {
-    Ember.A(routes).forEach(function (child) {
-      this._route(child);
-    }, this);
-  }
-  else {
-    this.asResource();
-  }
-  return this;
-};
-
-/**
- * Returns the string representation of this meta
- *
- * @returns {string}
- */
-RouteMeta.prototype.toString = function () {
-  return this.fullName() + '[' + this.fullPath() + ']';
-};
-
-/**
- * Transforms this RouteMeta into an Ember router
- *
- * @method toRouter
- * @param {Object} options
- * @return {Ember.Router}
- */
-RouteMeta.prototype.toRouter = function (options) {
-  var Router;
-  options = options || {};
-  if (this.parent) {
-    throw new Error('Only the root route may be exported as an Ember router.');
-  }
-  options._enhancedRouterRootMeta = this;
-  Router = Ember.Router.extend(options);
-  Router.map(this.mapFunction());
-  return Router;
-};
+});
 
 export default route;
 

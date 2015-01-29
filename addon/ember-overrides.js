@@ -14,7 +14,7 @@ Ember.Route.reopen({
    */
   enhancedRouterMeta: Ember.computed(function () {
     var meta = this.enhancedRouterService.metaForRoute(this.routeName);
-    meta.registerRoute(this);
+    meta.set('route', this);
     return meta;
   }).readOnly(),
 

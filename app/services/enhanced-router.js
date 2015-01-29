@@ -3,9 +3,9 @@ import Ember from 'ember';
 var keyPrefix = '$$EER$$';
 
 function registerMeta(dict, meta) {
-  var name = meta.fullName();
+  var name = meta.get('fullName');
   dict[keyPrefix + name] = meta;
-  Ember.A(meta.children).forEach(function (subMeta) {
+  meta.get('children').forEach(function (subMeta) {
     registerMeta(dict, subMeta);
   });
 }
@@ -50,6 +50,6 @@ export default Ember.Object.extend({
    * @property currentTitle
    * @type {string}
    */
-  currentTitle: Ember.computed.readOnly('activeMeta._ttp._fullTitle')
+  currentTitle: Ember.computed.readOnly('activeMeta.fullTitle')
 
 });
