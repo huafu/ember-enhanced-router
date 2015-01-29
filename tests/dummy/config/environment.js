@@ -5,7 +5,7 @@ module.exports = function(environment) {
     modulePrefix: 'dummy',
     environment: environment,
     baseURL: process.env.EMBER_CLI_BASE_URL || '/',
-    locationType: 'auto',
+    locationType: process.env.EMBER_CLI_LOCATION_TYPE || 'auto',
     EmberENV: {
       FEATURES: {
         // Here you can enable experimental features on an ember canary build

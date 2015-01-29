@@ -6,8 +6,8 @@ GH_PAGES_PATH=gh-pages
 DIST_PATH=dist
 APP_NAME='ember-enhanced-router'
 
-if [ "`cat ${MY_PATH}/.git/HEAD`" != 'ref: refs/heads/develop' ]; then
-  echo "You must be on develop branch prior to update GitHub pages"
+if [ "`cat ${MY_PATH}/.git/HEAD`" != 'ref: refs/heads/master' ]; then
+  echo "You must be on master branch prior to update GitHub pages"
   exit 1
 fi
 
