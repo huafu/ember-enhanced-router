@@ -47,16 +47,6 @@ export default Ember.Component.extend({
    * @property documentTitle
    * @type {string}
    */
-  documentTitle: Ember.computed.readOnly('enhancedRouter.currentTitle'),
+  documentTitle: Ember.computed.readOnly('enhancedRouter.currentTitle')
 
-  /**
-   * Update the document title
-   *
-   * @method updateDocumentTitle
-   */
-  updateDocumentTitle: Ember.observer('documentTitle', function () {
-    if (!Ember.testing) {
-      window.document.title = this.get('documentTitle');
-    }
-  }).on('init')
 });

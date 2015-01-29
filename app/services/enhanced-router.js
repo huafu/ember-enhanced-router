@@ -50,6 +50,17 @@ export default Ember.Object.extend({
    * @property currentTitle
    * @type {string}
    */
-  currentTitle: Ember.computed.readOnly('activeMeta.fullTitle')
+  currentTitle: Ember.computed.readOnly('activeMeta.fullTitle'),
+
+  /**
+   * Update the document title
+   *
+   * @method updateDocumentTitle
+   */
+  updateDocumentTitle: Ember.observer('currentTitle', function () {
+    if (!Ember.testing) {
+      window.document.title = this.get('currentTitle');
+    }
+  })
 
 });

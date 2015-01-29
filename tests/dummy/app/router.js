@@ -24,16 +24,16 @@ export default route(null, 'Ember Enhanced Router').routes(
     // `new` route with `New User` title and `new` as path (true stop bubbling for tokens)
     route('new', 'New User', {resetTitle: true}),
 
-    // `edit` route with either `Edit profile` or `Edit User <controller.model.name>` title token and `:user_id/edit` as path
+    // `edit` route with either `Edit Profile` or `"<controller.model.name>"` title token and `:user_id/edit` as path
     // the computed property has the controller as context
     route('edit@:user_id/edit', function () {
-      if (this.get('model') === this.get('session.user')) {
+      if (this.get('isSessionUser')) {
         return 'Edit Profile';
       }
       else {
-        return 'Edit User ' + this.get('name');
+        return '"' + this.get('name') + '"';
       }
-    }.property('model', 'model.name', 'session.user'))
+    }.property('isSessionUser', 'model.name'))
   ),
 
   // the catchall route

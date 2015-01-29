@@ -1,3 +1,53 @@
-<h2 id="title">Welcome to Ember.js</h2>
-{{document-title}}
+<h2 id="title">Welcome to Ember.js Enhanced Router Addon example</h2>
+
+<code>
+// file: app/router.js
+import Ember from 'ember';
+import config from './config/environment';
+import route from 'ember-enhanced-router/route';
+
+// if any controller.documentTitleToken exists, then it'll be used as the titleToken if no
+// title has been defined in the router
+
+// application route with title `Ember Enhanced Router`
+export default route(null, 'Ember Enhanced Router').routes(
+
+  // `home` route with no title token and `/` as path
+  route('{{link-to 'home' 'home'}}@/', false),
+
+  // `dashboard` route with title token `Dashboard` and `dashboard` as path
+  route('{{link-to 'dashboard' 'dashboard'}}'),
+
+  // `members` route with title token `All Members` and `users` as path
+  route('{{link-to 'members' 'members'}}@users', 'All Members').routes(
+
+    // `index` route with no title token and `/` as path (because `index`)
+    route('{{link-to 'index' 'members.index'}}'),
+
+    // `show` route with `User &lt;controller.name&gt;` title token and `:user_id` as path
+    route('{{link-to 'show' 'members.show' 1}}@:user_id', 'User {{name}}'),
+
+    // `new` route with `New User` title and `new` as path (true stop bubbling for tokens)
+    route('{{link-to 'new' 'members.new'}}', 'New User', {resetTitle: true}),
+
+    // `edit` route with either `Edit Profile` or `"&lt;controller.model.name&gt;"` title token and `:user_id/edit` as path
+    // the computed property has the controller as context
+    route('{{link-to 'edit' 'members.edit' 1}}@:user_id/edit', function () {
+      if (this.get('isSessionUser')) {
+        return 'Edit Profile';
+      }
+      else {
+        return '"' + this.get('name') + '"';
+      }
+    }.property('isSessionUser', 'model.name'))
+  ),
+
+  // the catchall route, if any, with `Nothing here` as title token
+  route('{{link-to 'catchall' 'catchall' 1}}@*', 'Nothing Here!')
+
+).toRouter({location: config.locationType});
+</code>
+
 {{outlet}}
+
+{{document-title}}

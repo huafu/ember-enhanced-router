@@ -4,7 +4,7 @@ module.exports = function(environment) {
   var ENV = {
     modulePrefix: 'dummy',
     environment: environment,
-    baseURL: '/',
+    baseURL: process.env.EMBER_CLI_BASE_URL || '/',
     locationType: 'auto',
     EmberENV: {
       FEATURES: {
@@ -16,6 +16,16 @@ module.exports = function(environment) {
     APP: {
       // Here you can pass flags/options to your application instance
       // when it is created
+      rootElement: '#application'
+    },
+    contentSecurityPolicy: {
+      'default-src': "'none'",
+      'script-src':  "'self'",
+      'font-src':    "'self'",
+      'connect-src': "'self'",
+      'img-src':     "'self'",
+      'style-src':   "'self' 'unsafe-inline'",
+      'frame-src':   "ghbtns.com platform.twitter.com"
     }
   };
 

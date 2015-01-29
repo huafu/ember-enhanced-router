@@ -249,13 +249,15 @@ var RouteMeta = Ember.Object.extend({
     }
     // create our class and the computed properties for it, then create our object
     return Ember.ObjectProxy.extend({
+      content: computed.readOnly('_linkedEerMeta.controller'),
+      _linkedEerMeta: null,
       _defaultTitleToken: tokenCP,
       _realTitleToken:    computed('_defaultTitleToken', 'content.documentTitleToken', function () {
         var token = this.get('content.documentTitleToken');
         return token === false ? null : (token || this.get('_defaultTitleToken'));
       })
     }).create({
-      content: this.controller
+      _linkedEerMeta: this
     });
   }).readOnly(),
 
@@ -312,7 +314,7 @@ var RouteMeta = Ember.Object.extend({
         args.push(meta.get('mapFunction'));
       }
       console[isResource && console.group ? 'group' : 'log'](
-        '[enhanced-router] defining ' + methodName + ' `' + args[0] + '` + with path `' + args[1].path + '`'
+        '[enhanced-router] defining ' + meta
       );
       target[methodName].apply(target, args);
       if (isResource && console.group) {
@@ -436,7 +438,7 @@ var RouteMeta = Ember.Object.extend({
    * @returns {string}
    */
   toString: function () {
-    return this.get('fullName') + '[' + this.get('fullPath') + ']';
+    return this.get('methodName') + ' `' + this.get('name') + '` at `' + this.get('path') + '`';
   },
 
   /**
