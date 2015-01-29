@@ -13,3 +13,4 @@ testem.json
 .idea/
 tmp/
 dist/
+gh-pages/
