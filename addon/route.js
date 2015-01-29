@@ -8,8 +8,8 @@ function cleanPath(path) {
   return path.replace(/(?:^\/|\/$)/g, '');
 }
 
-function defaultFormatter(tokens) {
-  return tokens.join(' - ');
+function defaultFormatter(tokens, reversedTokens) {
+  return reversedTokens.join(' - ');
 }
 
 function humanize(string) {
@@ -53,7 +53,7 @@ function route(name, titleToken, options) {
   return RouteMeta.create({
     name:             name || 'application',
     path:             path,
-    routerTitleToken: titleToken,
+    routerTitleToken: {value: titleToken},
     options:          options || {}
   });
 }
@@ -123,7 +123,7 @@ var RouteMeta = Ember.Object.extend({
   /**
    * The titleToken as defined in the router
    * @property routerTitleToken
-   * @type {string|Function}
+   * @type {{value: string|Function|Ember.ComputedProperty}}
    */
   routerTitleToken: null,
 
@@ -174,7 +174,7 @@ var RouteMeta = Ember.Object.extend({
    * @type {string}
    */
   fullTitle: computed('titleToken', 'parent.fullTitle', 'options.resetTitle', function () {
-    var tokens = [], current = this, formatter, grabTokens = true, token;
+    var tokens = [], reversedTokens = [], current = this, formatter, grabTokens = true, token;
     while (current && (!formatter || grabTokens)) {
       if (grabTokens) {
         token = current.get('titleToken');
@@ -183,6 +183,7 @@ var RouteMeta = Ember.Object.extend({
             token = [token];
           }
           tokens.unshift.apply(tokens, token);
+          reversedTokens.push.apply(reversedTokens, token);
         }
         if (current.get('options.resetTitle')) {
           grabTokens = false;
@@ -194,7 +195,7 @@ var RouteMeta = Ember.Object.extend({
       current = current.get('parent');
     }
     tokens = Ember.A(tokens).filter(Boolean);
-    return (formatter || defaultFormatter)(tokens);
+    return (formatter || defaultFormatter)(tokens, reversedTokens);
   }).readOnly(),
 
   /**
@@ -216,12 +217,13 @@ var RouteMeta = Ember.Object.extend({
     var tokenCP, defaultToken, props, originalTitleToken;
     // build the title computed property
     defaultToken = this.get('isIndexRoute') ? null : this.get('humanizedName');
-    originalTitleToken = this.get('routerTitleToken');
+    originalTitleToken = this.get('routerTitleToken').value;
     if (originalTitleToken == null) {
       // default using the humanized version of the route name
-      tokenCP = computed(function () {
-        return defaultToken;
-      });
+      tokenCP = defaultToken;
+    }
+    else if (originalTitleToken === false) {
+      tokenCP = null;
     }
     else if (originalTitleToken instanceof Ember.ComputedProperty) {
       // it is already a computed property
@@ -281,12 +283,12 @@ var RouteMeta = Ember.Object.extend({
   }).readOnly(),
 
   /**
-   * Kind of meta (resource or route)
-   * @property kind
+   * Method name for the router definition (resource or route)
+   * @property methodName
    * @type {string}
    */
-  kind: computed('isResource', function () {
-    return this.get('isResource') ? 'resource' : 'route';
+  methodName: computed('options.asResource', function () {
+    return this.get('options.asResource') ? 'resource' : 'route';
   }).readOnly(),
 
 
@@ -302,17 +304,17 @@ var RouteMeta = Ember.Object.extend({
       this._route('index');
     }
     this.get('children').forEach(function (meta) {
-      var args, kind, isResource;
+      var args, methodName, isResource;
       args = [meta.get('name'), {path: meta.get('path')}];
-      kind = meta.get('kind');
+      methodName = meta.get('methodName');
       isResource = meta.get('isResource');
       if (isResource) {
         args.push(meta.get('mapFunction'));
       }
-      console[meta.isResource && console.group ? 'group' : 'log'](
-        '[enhanced-router] defining ' + kind + ' `' + args[0] + '` + with path `' + args[1] + '`'
+      console[isResource && console.group ? 'group' : 'log'](
+        '[enhanced-router] defining ' + methodName + ' `' + args[0] + '` + with path `' + args[1].path + '`'
       );
-      target[kind].apply(target, args);
+      target[methodName].apply(target, args);
       if (isResource && console.group) {
         console.groupEnd();
       }
