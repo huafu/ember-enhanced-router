@@ -1,7 +1,7 @@
 {
   "name": "ember-enhanced-router",
   "version": "0.0.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "Easier to define and more readable router for EmberJS with support for auto-updated document title based on each route.",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -11,11 +11,11 @@
     "build": "ember build",
     "test": "ember test"
   },
-  "repository": "",
+  "repository": "https://github.com/huafu/ember-enhanced-router.git",
   "engines": {
     "node": ">= 0.10.0"
   },
-  "author": "",
+  "author": "Huafu Gandon <huafu.gandon@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "broccoli-asset-rev": "^2.0.0",
@@ -33,7 +33,11 @@
     "glob": "^4.0.5"
   },
   "keywords": [
-    "ember-addon"
+    "ember-addon",
+    "enhanced",
+    "router",
+    "document",
+    "title"
   ],
   "ember-addon": {
     "configPath": "tests/dummy/config"
