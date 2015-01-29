@@ -9,7 +9,7 @@ and finding it too complex to define the titles and not dynamic. I thought that 
 each route should be defined in the router instead of inside each route, and I also that using the
 model as unique variable to create the title token of a route was not enough.
 
-See the demo application [there](http://huafu.github.io/ember-google-map/).
+See the demo application [there](http://huafu.github.io/ember-enhanced-router/).
 
 
 ## Installation
