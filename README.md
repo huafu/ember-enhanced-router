@@ -69,53 +69,53 @@ one used to put together all the collected tokens.
 
 There is nothing better than an example so here it is:
 
-    ```js
-    import Ember from 'ember';
-    import config from './config/environment';
-    import route from 'ember-enhanced-router/route';
-    
-    // if any controller.documentTitleToken exists, then it'll be used as the titleToken, except if
-    // the title has ben set to `false` in the router
-    
-    // application route with title `Ember Enhanced Router` (null could be replaced with 'application')
-    export default route(null, 'Ember Enhanced Router').routes( // this defines the sub-routes
-      // `home` route with no title token and `/` as path
-      route('home@/', false),
-    
-      // `dashboard` route with title token `Dashboard` and `dashboard` as path
-      route('dashboard'),
-    
-      // `members` route with title token `All Members` and `users` as path
-      route('members@users', 'All Members').routes(
-        // `index` route with no title token and `/` as path (because `index`)
-        // this line is optional as the system will automatically add it if it does not find any
-        // route with `/` as path.
-        // But if you need to define a title to this route, you can do it here.
-        route('index'),
-    
-        // `show` route with `User <controller.name>` title token and `:user_id` as path
-        route('show@:user_id', 'User {{name}}'),
-    
-        // `new` route with `New User` title and `new` as path (the title will just be 'New User'
-        // since we defined the `resetTitle` option to `true`
-        route('new', 'New User', {resetTitle: true}),
-    
-        // `edit` route with either `Edit profile` or `Edit User <controller.name>` title token and `:user_id/edit` as path
-        // the computed property has the controller as context
-        route('edit@:user_id/edit', function () {
-          if (this.get('model') === this.get('session.user')) {
-            return 'Edit Profile';
-          }
-          else {
-            return 'Edit User ' + this.get('name');
-          }
-        }.property('model', 'name', 'session.user'))
-      ),
-    
-      // the catchall route if necessary, with `Nothing Here` as the title
-      route('catchall@*', 'Nothing Here!')
-    ).toRouter({location: config.locationType});
-    ```
+```js
+import Ember from 'ember';
+import config from './config/environment';
+import route from 'ember-enhanced-router/route';
+
+// if any controller.documentTitleToken exists, then it'll be used as the titleToken, except if
+// the title has ben set to `false` in the router
+
+// application route with title `Ember Enhanced Router` (null could be replaced with 'application')
+export default route(null, 'Ember Enhanced Router').routes( // this defines the sub-routes
+  // `home` route with no title token and `/` as path
+  route('home@/', false),
+
+  // `dashboard` route with title token `Dashboard` and `dashboard` as path
+  route('dashboard'),
+
+  // `members` route with title token `All Members` and `users` as path
+  route('members@users', 'All Members').routes(
+    // `index` route with no title token and `/` as path (because `index`)
+    // this line is optional as the system will automatically add it if it does not find any
+    // route with `/` as path.
+    // But if you need to define a title to this route, you can do it here.
+    route('index'),
+
+    // `show` route with `User <controller.name>` title token and `:user_id` as path
+    route('show@:user_id', 'User {{name}}'),
+
+    // `new` route with `New User` title and `new` as path (the title will just be 'New User'
+    // since we defined the `resetTitle` option to `true`
+    route('new', 'New User', {resetTitle: true}),
+
+    // `edit` route with either `Edit profile` or `Edit User <controller.name>` title token and `:user_id/edit` as path
+    // the computed property has the controller as context
+    route('edit@:user_id/edit', function () {
+      if (this.get('model') === this.get('session.user')) {
+        return 'Edit Profile';
+      }
+      else {
+        return 'Edit User ' + this.get('name');
+      }
+    }.property('model', 'name', 'session.user'))
+  ),
+
+  // the catchall route if necessary, with `Nothing Here` as the title
+  route('catchall@*', 'Nothing Here!')
+).toRouter({location: config.locationType});
+```
 
 
 ## Author
