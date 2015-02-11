@@ -1,6 +1,6 @@
 {
   "name": "ember-enhanced-router",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Easier to define and more readable router for EmberJS with support for auto-updated document title based on each route.",
   "directories": {
     "doc": "doc",
