@@ -3,6 +3,7 @@ import './ember-overrides';
 
 var computed = Ember.computed;
 var readOnly = computed.readOnly;
+var slice = [].slice;
 
 function cleanPath(path) {
   return path.replace(/(?:^\/|\/$)/g, '');
@@ -249,8 +250,8 @@ var RouteMeta = Ember.Object.extend({
     }
     // create our class and the computed properties for it, then create our object
     return Ember.ObjectProxy.extend({
-      content: computed.readOnly('_linkedEerMeta.controller'),
-      _linkedEerMeta: null,
+      content:            computed.readOnly('_linkedEerMeta.controller'),
+      _linkedEerMeta:     null,
       _defaultTitleToken: tokenCP,
       _realTitleToken:    computed('_defaultTitleToken', 'content.documentTitleToken', function () {
         var token = this.get('content.documentTitleToken');
@@ -449,13 +450,19 @@ var RouteMeta = Ember.Object.extend({
    * @return {Ember.Router}
    */
   toRouter: function (options) {
-    var Router;
-    options = options || {};
+    var Router, args;
     if (this.get('parent')) {
       throw new Error('Only the root route may be exported as an Ember router.');
     }
+    args = slice.call(arguments);
+    if (!args.length || args[args.length - 1] instanceof Ember.Mixin) {
+      args.push(options = {});
+    }
+    else {
+      options = args[args.length - 1];
+    }
     options._enhancedRouterRootMeta = this;
-    Router = Ember.Router.extend(options);
+    Router = Ember.Router.extend.apply(Ember.Router, args);
     Router.map(this.get('mapFunction'));
     return Router;
   }
