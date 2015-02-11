@@ -46,8 +46,9 @@ a new route. It takes 1, 2 or 3 arguments:
         `this.resource` instead of `this.route`.
         
 * Once you're done defining your routes, call `.toRouter()` to generate and export the router
-expected by Ember. It'll use the first parameter to extend Ember.Router and create the Router, so
-it's a good place to define for example the location type.
+expected by Ember. It'll use all the parameter to extend `Ember.Router` and create the Router, so
+it's a good place to define for example the location type, and/or add some mixins such as Google
+Analytics from `ember-cli-google-analytics`.
 
 * To update the `document.title` automatically taking care of the bindings and all, you need to insert the
 `document-title` component in your `application` template: `{{document-title}}`. By default, it'll
